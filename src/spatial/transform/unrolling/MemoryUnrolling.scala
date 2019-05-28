@@ -73,6 +73,7 @@ trait MemoryUnrolling extends UnrollingBase {
       val mem2 = mirror(mem.asInstanceOf[Sym[Any]],op.asInstanceOf[Op[Any]])
       mem2.instance = inst
       mem2.name = mem2.name.map{x => s"${x}_$d"}
+      mem2.originalSym = mem
       mem2.padding = inst.padding
       mem2.darkVolume = inst.darkVolume
       dbgs(s"  ${stm(mem2)}")
@@ -263,6 +264,7 @@ trait MemoryUnrolling extends UnrollingBase {
           s.addDispatch(Nil, 0)
           s.addGroupId(Nil,gids)
           s.segmentMapping = Map(0 -> segment)
+          mem2.substHotSwap(lhs, s)
           if (lhs.getIterDiff.isDefined) s.iterDiff = lhs.iterDiff
           dbgs(s"  ${stm(s)}"); //strMeta(s)
         }
