@@ -19,7 +19,7 @@ trait PlasticineTest extends DSLTest { test =>
     //"--debug=true" ::
     Nil
 
-  abstract class PIRBackend extends Backend(name, args="--pir --dot", "", "", "") {
+  abstract class PIRBackend(args:String="--pir --dot") extends Backend(name, args=args, "", "", "") {
     override val name = this.getClass.getSimpleName.replace("$","")
     override def shouldRun: Boolean = checkFlag(s"test.${name}") || checkFlag(s"test.PIR")
     def compileOnly = checkFlag(s"test.compileOnly")
@@ -382,6 +382,21 @@ trait PlasticineTest extends DSLTest { test =>
     }
   }
 
+  case object MDTst extends PIRBackend(args="--pir --dot") {
+    private val genName = name + "_" + property("project").getOrElse("")
+    override def genDir(name:String):String = s"${IR.config.cwd}/gen/${this.genName}/$name/"
+    override def logDir(name:String):String = s"${IR.config.cwd}/gen/${this.genName}/$name/log"
+    override def repDir(name:String):String = s"${IR.config.cwd}/gen/${this.genName}/$name/report"
+    def runPasses():Result = {
+      val result = genpir() >>
+      pirpass("gentst", s"--module --mapping=true --codegen=true --net=inf --tungsten --psim=false".split(" ").toList) >>
+      scommand(s"maketst", "make".split(" "), timeout=3000, parseMake, MakeError.apply, wd=IR.config.genDir+"/tungsten")
+      runtimeArgs.cmds.foldLeft(result) { case (result, args) =>
+        result >> scommand(s"runtst", s"./tungsten $args".split(" "), timeout=2000, parseTst, RunError.apply, wd=IR.config.genDir+"/tungsten")
+      }
+    }
+  }
+
   override def backends: Seq[Backend] = 
     Asic +:
     P2PNoSim +:
@@ -390,6 +405,7 @@ trait PlasticineTest extends DSLTest { test =>
     Static(row=14,col=14,vlink=4,slink=4) +: 
     Dot +:
     Tst +:
+    MDTst +:
     super.backends
 
 }
