@@ -384,8 +384,8 @@ trait PlasticineTest extends DSLTest { test =>
   }
 
   case class Tst(
-    row:Int=15,
-    col:Int=15,
+    row:Int=18,
+    col:Int=18,
     vlink:Int = 3,
     slink:Int = 4,
     iter:Int = 300,
